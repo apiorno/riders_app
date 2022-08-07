@@ -1,18 +1,25 @@
+import 'dart:js';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:riders_app/info_handler/app_info.dart';
 import 'package:riders_app/splash/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   runApp(MyApp(
-      child: MaterialApp(
-    title: 'Riders App',
-    theme: ThemeData(
-      primarySwatch: Colors.blue,
+      child: ChangeNotifierProvider(
+    create: (context) => AppInfo(),
+    child: MaterialApp(
+      title: 'Riders App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const MySplashScreen(),
+      debugShowCheckedModeBanner: false,
     ),
-    home: const MySplashScreen(),
-    debugShowCheckedModeBanner: false,
   )));
 }
 

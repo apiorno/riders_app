@@ -1,10 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:riders_app/globals.dart';
+import 'package:riders_app/helpers/repository_helper.dart';
+import 'package:riders_app/helpers/request_helper.dart';
+import 'package:riders_app/home/search_places_screen.dart';
+import 'package:riders_app/info_handler/app_info.dart';
 import 'package:riders_app/widgets/my_drawer.dart';
+import 'package:riders_app/widgets/progress_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -29,6 +36,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   double bottomPaddingOfMap = 0;
 
+  List<LatLng> polylineCoordinates = [];
+  Set<Polyline> polylines = {};
+
+  Set<Marker> markers = {};
+  Set<Circle> circles = {};
+
   void checkIfPermissionAllowed() async {
     _locationPermission = await Geolocator.requestPermission();
     if (_locationPermission == LocationPermission.denied) {
@@ -44,6 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
     var cameraPosition = CameraPosition(target: latLngPosition, zoom: 14);
     newGoogleMapController!
         .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+    final readableAddress =
+        await RepositoryHelper.searchAddressForGeographicCoordinates(
+            userCurrentPosition!, context);
   }
 
   @override
@@ -69,6 +85,9 @@ class _HomeScreenState extends State<HomeScreen> {
             zoomGesturesEnabled: true,
             zoomControlsEnabled: true,
             initialCameraPosition: _kGooglePlex,
+            polylines: polylines,
+            markers: markers,
+            circles: circles,
             onMapCreated: (controller) {
               _completerController.complete(controller);
               newGoogleMapController = controller;
@@ -124,15 +143,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
+                              children: [
+                                const Text(
                                   'From',
                                   style: TextStyle(
                                       color: Colors.grey, fontSize: 12),
                                 ),
                                 Text(
-                                  'Current Location',
-                                  style: TextStyle(
+                                  Provider.of<AppInfo>(context)
+                                          .userPickUpLocation
+                                          ?.locationName ??
+                                      'Your current location',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
                                       color: Colors.grey, fontSize: 14),
                                 ),
                               ],
@@ -150,31 +173,46 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(
                           height: 16,
                         ),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.add_location_alt_outlined,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(
-                              width: 12,
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  'To',
-                                  style: TextStyle(
-                                      color: Colors.grey, fontSize: 12),
-                                ),
-                                Text(
-                                  'Dropoff Location',
-                                  style: TextStyle(
-                                      color: Colors.grey, fontSize: 14),
-                                ),
-                              ],
-                            )
-                          ],
+                        GestureDetector(
+                          onTap: () async {
+                            final isSuccessfulResult = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const SearchPlacesScreen()));
+                            if (isSuccessfulResult) {
+                              await _drawPolylineFromOriginToDestination();
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.add_location_alt_outlined,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(
+                                width: 12,
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'To',
+                                    style: TextStyle(
+                                        color: Colors.grey, fontSize: 12),
+                                  ),
+                                  Text(
+                                    Provider.of<AppInfo>(context)
+                                            .userPickUpLocation
+                                            ?.locationName ??
+                                        'Dropoff Location',
+                                    style: const TextStyle(
+                                        color: Colors.grey, fontSize: 14),
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
                         ),
                         const SizedBox(
                           height: 10,
@@ -207,6 +245,106 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _drawPolylineFromOriginToDestination() async {
+    final appInfo = Provider.of<AppInfo>(context, listen: false);
+    final originPosition = LatLng(appInfo.userPickUpLocation!.locationLatitude!,
+        appInfo.userPickUpLocation!.locationLongitude!);
+    final destinationPosition = LatLng(
+        appInfo.userDropOffAddress!.locationLatitude!,
+        appInfo.userDropOffAddress!.locationLongitude!);
+
+    showDialog(
+        context: context,
+        builder: (context) => const ProgressDialog(
+              message: 'Please wait!',
+            ));
+    final directionDetailsInfo =
+        await RepositoryHelper.obtainOriginToDestinationDirectionDetails(
+            originPosition, destinationPosition);
+    Navigator.pop(context);
+
+    PolylinePoints pPoints = PolylinePoints();
+    List<PointLatLng> decodedPpointsResult =
+        pPoints.decodePolyline(directionDetailsInfo.ePoints!);
+    polylineCoordinates = decodedPpointsResult
+        .map((PointLatLng pointLatLng) =>
+            LatLng(pointLatLng.latitude, pointLatLng.longitude))
+        .toList();
+
+    setState(() {
+      final polyline = Polyline(
+          polylineId: const PolylineId('Poly'),
+          color: Colors.purpleAccent,
+          jointType: JointType.round,
+          points: polylineCoordinates,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          geodesic: true);
+      polylines.add(polyline);
+    });
+    LatLngBounds bounds;
+    if (originPosition.latitude > destinationPosition.latitude &&
+        originPosition.longitude > destinationPosition.longitude) {
+      bounds = LatLngBounds(
+          southwest: destinationPosition, northeast: originPosition);
+    } else if (originPosition.latitude > destinationPosition.latitude) {
+      bounds = LatLngBounds(
+          southwest:
+              LatLng(originPosition.latitude, destinationPosition.longitude),
+          northeast:
+              LatLng(destinationPosition.latitude, originPosition.longitude));
+    } else if (originPosition.longitude > destinationPosition.longitude) {
+      bounds = LatLngBounds(
+          southwest:
+              LatLng(destinationPosition.latitude, originPosition.longitude),
+          northeast:
+              LatLng(originPosition.latitude, destinationPosition.longitude));
+    } else {
+      bounds = LatLngBounds(
+          southwest: originPosition, northeast: destinationPosition);
+    }
+    newGoogleMapController!
+        .animateCamera(CameraUpdate.newLatLngBounds(bounds, 65));
+    final originMarker = Marker(
+        markerId: const MarkerId('originID'),
+        infoWindow: InfoWindow(
+            title: appInfo.userPickUpLocation!.locationName, snippet: 'Origin'),
+        position: destinationPosition,
+        icon:
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow));
+    final destiantionMarker = Marker(
+        markerId: const MarkerId('destinationID'),
+        infoWindow: InfoWindow(
+            title: appInfo.userDropOffAddress!.locationName,
+            snippet: 'Destination'),
+        position: destinationPosition,
+        icon:
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange));
+
+    final originCircle = Circle(
+        circleId: const CircleId('originID'),
+        fillColor: Colors.green,
+        radius: 12,
+        strokeWidth: 3,
+        strokeColor: Colors.white,
+        center: originPosition);
+
+    final destinationCircle = Circle(
+        circleId: const CircleId('destinationID'),
+        fillColor: Colors.red,
+        radius: 12,
+        strokeWidth: 3,
+        strokeColor: Colors.white,
+        center: destinationPosition);
+
+    setState(() {
+      markers.add(originMarker);
+      markers.add(destiantionMarker);
+      circles.add(originCircle);
+      circles.add(destinationCircle);
+    });
   }
 
   Future<void> _setGoogleMapDarkMode() {
