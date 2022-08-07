@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:riders_app/globals.dart';
 import 'package:riders_app/helpers/repository_helper.dart';
-import 'package:riders_app/helpers/request_helper.dart';
 import 'package:riders_app/home/search_places_screen.dart';
 import 'package:riders_app/info_handler/app_info.dart';
 import 'package:riders_app/widgets/my_drawer.dart';
@@ -42,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Set<Marker> markers = {};
   Set<Circle> circles = {};
 
+  bool shouldOpenDrawer = true;
+
   void checkIfPermissionAllowed() async {
     _locationPermission = await Geolocator.requestPermission();
     if (_locationPermission == LocationPermission.denied) {
@@ -73,8 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       key: sKey,
       drawer: MyDrawer(
-        email: currentRider!.email,
-        name: currentRider!.name,
+        email: currentRider?.email ?? '',
+        name: currentRider?.name ?? '',
       ),
       body: Stack(
         children: [
@@ -100,13 +102,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Positioned(
             top: 36,
-            left: 22,
+            left: 14,
             child: GestureDetector(
-              onTap: () => sKey.currentState!.openDrawer(),
-              child: const CircleAvatar(
+              onTap: () => shouldOpenDrawer
+                  ? sKey.currentState!.openDrawer()
+                  : SystemNavigator.pop(),
+              child: CircleAvatar(
                 backgroundColor: Colors.grey,
                 child: Icon(
-                  Icons.menu,
+                  shouldOpenDrawer ? Icons.menu : Icons.close,
                   color: Colors.black54,
                 ),
               ),
@@ -181,6 +185,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     builder: (context) =>
                                         const SearchPlacesScreen()));
                             if (isSuccessfulResult) {
+                              setState(() {
+                                shouldOpenDrawer = false;
+                              });
                               await _drawPolylineFromOriginToDestination();
                             }
                           },
