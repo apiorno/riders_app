@@ -1,15 +1,22 @@
 import 'dart:async';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_geofire/flutter_geofire.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:riders_app/globals.dart';
+import 'package:riders_app/helpers/geofire_repository_helper.dart';
 import 'package:riders_app/helpers/repository_helper.dart';
 import 'package:riders_app/home/search_places_screen.dart';
+import 'package:riders_app/home/select_nearet_active_driver.dart';
 import 'package:riders_app/info_handler/app_info.dart';
+import 'package:riders_app/main.dart';
+import 'package:riders_app/models/active_driver.dart';
 import 'package:riders_app/widgets/my_drawer.dart';
 import 'package:riders_app/widgets/progress_dialog.dart';
 
@@ -43,6 +50,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Set<Circle> circles = {};
 
   bool shouldOpenDrawer = true;
+  bool activeDriverKeyLoaded = false;
+
+  late BitmapDescriptor activeDriversIcon;
+
+  List<ActiveDriver> onlineAvailableDrivers = [];
+
+  DatabaseReference? referenceRideRequest;
 
   void checkIfPermissionAllowed() async {
     _locationPermission = await Geolocator.requestPermission();
@@ -62,12 +76,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final readableAddress =
         await RepositoryHelper.searchAddressForGeographicCoordinates(
             userCurrentPosition!, context);
+    initializeGeoFireListener();
   }
 
   @override
   void initState() {
     super.initState();
     checkIfPermissionAllowed();
+    initializeActivDriversIconMarker();
   }
 
   @override
@@ -233,7 +249,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 16,
                         ),
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            final appInfo = Provider.of<AppInfo>(context);
+                            if (appInfo.userPickUpLocation == null) {
+                              Fluttertoast.showToast(
+                                  msg: 'Please select you location');
+                            } else if (appInfo.userDropOffAddress == null) {
+                              Fluttertoast.showToast(
+                                  msg: 'Please select you destination');
+                            } else {
+                              saveRideRequestInformation();
+                            }
+                          },
                           style: ElevatedButton.styleFrom(
                               primary: Colors.green,
                               textStyle: const TextStyle(
@@ -270,6 +297,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final directionDetailsInfo =
         await RepositoryHelper.obtainOriginToDestinationDirectionDetails(
             originPosition, destinationPosition);
+    setState(() {
+      tripDirectionsInfo = directionDetailsInfo;
+    });
     Navigator.pop(context);
 
     PolylinePoints pPoints = PolylinePoints();
@@ -518,5 +548,129 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                   ]
               ''');
+  }
+
+  void initializeGeoFireListener() {
+    Geofire.initialize('activeDrivers');
+    Geofire.queryAtLocation(
+            userCurrentPosition!.latitude, userCurrentPosition!.longitude, 10)!
+        .listen((map) {
+      if (map != null) {
+        var callBack = map['callBack'];
+
+        switch (callBack) {
+          case Geofire.onKeyEntered:
+            final driver = ActiveDriver.fromJson(map);
+            GeofireRepositoryHelper().addDriver(driver);
+            if (activeDriverKeyLoaded) displayActiveDriversOnMap();
+            break;
+
+          case Geofire.onKeyExited:
+            GeofireRepositoryHelper().removeDriverById(map['key']);
+            displayActiveDriversOnMap();
+            break;
+
+          case Geofire.onKeyMoved:
+            final driver = ActiveDriver.fromJson(map);
+            GeofireRepositoryHelper().updateDriverPosition(driver);
+            displayActiveDriversOnMap();
+            break;
+
+          case Geofire.onGeoQueryReady:
+            activeDriverKeyLoaded = true;
+            displayActiveDriversOnMap();
+            break;
+        }
+      }
+
+      setState(() {});
+    });
+  }
+
+  void displayActiveDriversOnMap() {
+    setState(() {
+      markers.clear();
+      circles.clear();
+      final driverMarkers = <Marker>{};
+      for (var actualDriver in GeofireRepositoryHelper().activeDrivers) {
+        final position = LatLng(actualDriver.latitude, actualDriver.longitude);
+        final marker = Marker(
+            markerId: MarkerId(actualDriver.id),
+            position: position,
+            icon: activeDriversIcon,
+            rotation: 360);
+        driverMarkers.add(marker);
+      }
+      markers = driverMarkers;
+    });
+  }
+
+  Future<void> initializeActivDriversIconMarker() async {
+    final imageConfiguration =
+        createLocalImageConfiguration(context, size: const Size(2, 2));
+    activeDriversIcon = await BitmapDescriptor.fromAssetImage(
+        imageConfiguration, 'images/car.png');
+  }
+
+  void saveRideRequestInformation() {
+    //1. save ride request info
+    referenceRideRequest =
+        FirebaseDatabase.instance.ref().child('ride_requests').push();
+    final appInfo = Provider.of<AppInfo>(context);
+
+    final userInfo = {
+      'origin': {
+        'latitude': appInfo.userPickUpLocation!.locationLatitude.toString(),
+        'longitude': appInfo.userPickUpLocation!.locationLongitude.toString(),
+      },
+      'destination': {
+        'latitude': appInfo.userDropOffAddress!.locationLatitude.toString(),
+        'longitude': appInfo.userDropOffAddress!.locationLongitude.toString(),
+      },
+      'time': DateTime.now().toString(),
+      'userName': currentRider!.name,
+      'userPhone': currentRider!.phone,
+      'originAddress': appInfo.userPickUpLocation!.locationName,
+      'destinationAddress': appInfo.userDropOffAddress!.locationName
+    };
+    referenceRideRequest!.set(userInfo);
+
+    onlineAvailableDrivers = GeofireRepositoryHelper().activeDrivers;
+    searchNearestOnlineDrivers();
+  }
+
+  Future<void> searchNearestOnlineDrivers() async {
+    if (onlineAvailableDrivers.isEmpty) {
+      // cancel/delete ride request info
+      referenceRideRequest!.remove();
+      setState(() {
+        polylines.clear();
+        markers.clear();
+        circles.clear();
+        polylineCoordinates.clear();
+      });
+
+      Fluttertoast.showToast(
+          msg: 'No online drivers available.Try again in some minutes');
+      Future.delayed(
+          const Duration(milliseconds: 4000), () => SystemNavigator.pop());
+
+      return;
+    }
+    await retrieveOnlineDriversInformation();
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => const SelectNearestActiveDriversScreen()));
+  }
+
+  Future<void> retrieveOnlineDriversInformation() async {
+    DatabaseReference ref = FirebaseDatabase.instance.ref().child('drivers');
+    for (var onlineDriver in onlineAvailableDrivers) {
+      await ref.child(onlineDriver.id.toString()).once().then((dataSnapshot) {
+        final driverInfo = dataSnapshot.snapshot.value;
+        availableDrivers.add(driverInfo);
+      });
+    }
   }
 }

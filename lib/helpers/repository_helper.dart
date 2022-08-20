@@ -52,4 +52,16 @@ class RepositoryHelper {
 
     return DirectionDetailsInfo.fromJson(response['routes'][0]);
   }
+
+  static double calculateFareAmountFromOriginToDestination(
+      DirectionDetailsInfo? directionDetailsInfo) {
+    if (directionDetailsInfo == null) return 0;
+    double timeTraveledFarePerMinute =
+        (directionDetailsInfo.durationValue! / 60) * 0.1;
+    double distanceTraveledFarePerKilometer =
+        (directionDetailsInfo.durationValue! / 1000) * 0.1;
+    return double.parse(
+        (timeTraveledFarePerMinute + distanceTraveledFarePerKilometer)
+            .toStringAsFixed(1));
+  }
 }

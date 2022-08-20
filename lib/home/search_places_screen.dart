@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:riders_app/globals.dart';
-import 'package:riders_app/helpers/repository_helper.dart';
 import 'package:riders_app/helpers/request_helper.dart';
 import 'package:riders_app/models/predicted_place.dart';
 import 'package:riders_app/widgets/place_prediction_tile.dart';
