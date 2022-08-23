@@ -23,6 +23,7 @@ class RepositoryHelper {
           locationLatitude: position.latitude,
           locationLongitude: position.longitude,
           locationName: resultAddress);
+      if (!mounted) return;
       Provider.of<AppInfo>(context, listen: false)
           .updatePickUpLocationAddress(userPickupAddress);
     } catch (e) {

@@ -74,70 +74,78 @@ class _SelectNearestActiveDriversScreenState
       body: ListView.builder(
           itemCount: availableDrivers.length,
           itemBuilder: (context, index) {
-            return Card(
-              color: Colors.grey,
-              elevation: 3,
-              shadowColor: Colors.green,
-              margin: const EdgeInsets.all(8),
-              child: ListTile(
-                leading: Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Image.asset(
-                    'images/${availableDrivers[index]['car_details']['type'].toString()}.png',
-                    width: 70,
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  chosenDriverId = availableDrivers[index]['id'].toString();
+                });
+                Navigator.pop(context, true);
+              },
+              child: Card(
+                color: Colors.grey,
+                elevation: 3,
+                shadowColor: Colors.green,
+                margin: const EdgeInsets.all(8),
+                child: ListTile(
+                  leading: Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Image.asset(
+                      'images/${availableDrivers[index]['car_details']['type'].toString()}.png',
+                      width: 70,
+                    ),
                   ),
-                ),
-                title: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      availableDrivers[index]['name'],
-                      style:
-                          const TextStyle(fontSize: 14, color: Colors.black54),
-                    ),
-                    Text(
-                      availableDrivers[index]['car_details']['car_model'],
-                      style:
-                          const TextStyle(fontSize: 12, color: Colors.black54),
-                    ),
-                    SmoothStarRating(
-                      rating: 3.5,
-                      color: Colors.black,
-                      borderColor: Colors.black,
-                      allowHalfRating: true,
-                      starCount: 5,
-                      size: 15,
-                    )
-                  ],
-                ),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '\$ ${getFareAmountAccordingToVehicleType(index)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(
-                      height: 2,
-                    ),
-                    Text(
-                      tripDirectionsInfo?.durationText ?? '',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black54,
-                          fontSize: 12),
-                    ),
-                    const SizedBox(
-                      height: 2,
-                    ),
-                    Text(
-                      tripDirectionsInfo?.distanceText ?? '',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black54,
-                          fontSize: 12),
-                    )
-                  ],
+                  title: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        availableDrivers[index]['name'],
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.black54),
+                      ),
+                      Text(
+                        availableDrivers[index]['car_details']['car_model'],
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.black54),
+                      ),
+                      SmoothStarRating(
+                        rating: 3.5,
+                        color: Colors.black,
+                        borderColor: Colors.black,
+                        allowHalfRating: true,
+                        starCount: 5,
+                        size: 15,
+                      )
+                    ],
+                  ),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '\$ ${getFareAmountAccordingToVehicleType(index)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(
+                        height: 2,
+                      ),
+                      Text(
+                        tripDirectionsInfo?.durationText ?? '',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black54,
+                            fontSize: 12),
+                      ),
+                      const SizedBox(
+                        height: 2,
+                      ),
+                      Text(
+                        tripDirectionsInfo?.distanceText ?? '',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black54,
+                            fontSize: 12),
+                      )
+                    ],
+                  ),
                 ),
               ),
             );

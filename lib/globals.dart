@@ -8,3 +8,4 @@ String mapKey = 'MyApiKey';
 Rider? currentRider;
 List availableDrivers = [];
 DirectionDetailsInfo? tripDirectionsInfo;
+String chosenDriverId = '';

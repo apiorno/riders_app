@@ -15,7 +15,6 @@ import 'package:riders_app/helpers/repository_helper.dart';
 import 'package:riders_app/home/search_places_screen.dart';
 import 'package:riders_app/home/select_nearet_active_driver.dart';
 import 'package:riders_app/info_handler/app_info.dart';
-import 'package:riders_app/main.dart';
 import 'package:riders_app/models/active_driver.dart';
 import 'package:riders_app/widgets/my_drawer.dart';
 import 'package:riders_app/widgets/progress_dialog.dart';
@@ -73,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
     var cameraPosition = CameraPosition(target: latLngPosition, zoom: 14);
     newGoogleMapController!
         .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+    if (!mounted) return;
     final readableAddress =
         await RepositoryHelper.searchAddressForGeographicCoordinates(
             userCurrentPosition!, context);
@@ -300,6 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       tripDirectionsInfo = directionDetailsInfo;
     });
+    if (!mounted) return;
     Navigator.pop(context);
 
     PolylinePoints pPoints = PolylinePoints();
@@ -658,10 +659,26 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     await retrieveOnlineDriversInformation();
-    Navigator.push(
+    if (!mounted) return;
+    final isDriverSelected = await Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => const SelectNearestActiveDriversScreen()));
+            builder: (context) =>
+                SelectNearestActiveDriversScreen(referenceRideRequest)));
+    if (isDriverSelected) {
+      FirebaseDatabase.instance
+          .ref()
+          .child('drivers')
+          .child(chosenDriverId)
+          .once()
+          .then((snap) {
+        if (snap.snapshot.value != null) {
+          sendNotificationToDriver(chosenDriverId);
+        } else {
+          Fluttertoast.showToast(msg: 'This driver does not exists! Try again');
+        }
+      });
+    }
   }
 
   Future<void> retrieveOnlineDriversInformation() async {
@@ -672,5 +689,14 @@ class _HomeScreenState extends State<HomeScreen> {
         availableDrivers.add(driverInfo);
       });
     }
+  }
+
+  void sendNotificationToDriver(String chosenDriverId) {
+    FirebaseDatabase.instance
+        .ref()
+        .child('drivers')
+        .child(chosenDriverId)
+        .child('newRideStatus')
+        .set(referenceRideRequest!.key);
   }
 }
