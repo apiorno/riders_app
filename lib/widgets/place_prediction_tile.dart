@@ -7,11 +7,16 @@ import 'package:riders_app/models/directions_address.dart';
 import 'package:riders_app/models/predicted_place.dart';
 import 'package:riders_app/widgets/progress_dialog.dart';
 
-class PlacePredictionTile extends StatelessWidget {
+class PlacePredictionTile extends StatefulWidget {
   final PredictedPlace predictedPlace;
 
   const PlacePredictionTile(this.predictedPlace, {Key? key}) : super(key: key);
 
+  @override
+  State<PlacePredictionTile> createState() => _PlacePredictionTileState();
+}
+
+class _PlacePredictionTileState extends State<PlacePredictionTile> {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
@@ -24,13 +29,17 @@ class PlacePredictionTile extends StatelessWidget {
 
         try {
           final response = await RequestHelper.receiveRequest(
-              'https://maps.googleapis.com/maps/api/place/details/json?place_id=${predictedPlace.placeId}&key=$mapKey');
+              'https://maps.googleapis.com/maps/api/place/details/json?place_id=${widget.predictedPlace.placeId}&key=$mapKey');
           Navigator.pop(context);
           if (response['status'] == 'OK') {
             final newUserDropOffAddress =
                 DirectionsAddress.fromJson(response['result']);
             Provider.of<AppInfo>(context, listen: false)
                 .updateDropOffLocationAddress(newUserDropOffAddress);
+
+            setState(() {
+              userDropoffAddress = newUserDropOffAddress.locationName!;
+            });
             Navigator.pop(context, true);
           }
         } catch (e) {
@@ -58,7 +67,7 @@ class PlacePredictionTile extends StatelessWidget {
                     height: 8,
                   ),
                   Text(
-                    predictedPlace.mainText!,
+                    widget.predictedPlace.mainText!,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 16, color: Colors.white54),
                   ),
@@ -66,7 +75,7 @@ class PlacePredictionTile extends StatelessWidget {
                     height: 2,
                   ),
                   Text(
-                    predictedPlace.secondaryText!,
+                    widget.predictedPlace.secondaryText!,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 12, color: Colors.white54),
                   ),

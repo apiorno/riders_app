@@ -9,3 +9,5 @@ Rider? currentRider;
 List availableDrivers = [];
 DirectionDetailsInfo? tripDirectionsInfo;
 String chosenDriverId = '';
+String cloudMessagingServerToken = 'ServerToken';
+late String userDropoffAddress;

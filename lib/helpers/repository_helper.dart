@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'dart:js';
+
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:riders_app/globals.dart';
 import 'package:riders_app/helpers/request_helper.dart';
@@ -23,7 +27,7 @@ class RepositoryHelper {
           locationLatitude: position.latitude,
           locationLongitude: position.longitude,
           locationName: resultAddress);
-      if (!mounted) return;
+
       Provider.of<AppInfo>(context, listen: false)
           .updatePickUpLocationAddress(userPickupAddress);
     } catch (e) {
@@ -64,5 +68,31 @@ class RepositoryHelper {
     return double.parse(
         (timeTraveledFarePerMinute + distanceTraveledFarePerKilometer)
             .toStringAsFixed(1));
+  }
+
+  static sendNotificationToDriver(String deviceRegistrationToken,
+      String userRideRequestId, BuildContext context) {
+    final header = {
+      'Content-Type': 'application/json',
+      'Authorization': cloudMessagingServerToken,
+    };
+    final body = {
+      'body': 'Destination address $userDropoffAddress',
+      'title': 'New Trip Request'
+    };
+    final dataMap = {
+      'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+      'id': '1',
+      'status': 'done',
+      'rideRequestId': userRideRequestId
+    };
+    final officialNotification = {
+      'notification': body,
+      'data': dataMap,
+      'priority': 'high',
+      'to': deviceRegistrationToken
+    };
+    final response = http.post(Uri.parse('https://fcm.googleapis.com/fcm/send'),
+        headers: header, body: jsonEncode(officialNotification));
   }
 }

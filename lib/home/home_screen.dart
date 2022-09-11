@@ -692,11 +692,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void sendNotificationToDriver(String chosenDriverId) {
-    FirebaseDatabase.instance
-        .ref()
-        .child('drivers')
-        .child(chosenDriverId)
-        .child('newRideStatus')
-        .set(referenceRideRequest!.key);
+    DatabaseReference driverRef =
+        FirebaseDatabase.instance.ref().child('drivers').child(chosenDriverId);
+
+    driverRef.child('newRideStatus').set(referenceRideRequest!.key);
+    driverRef.child('token').once().then((snap) {
+      final deviceRegistrationToken = snap.snapshot.value;
+      if (deviceRegistrationToken == null) {
+        Fluttertoast.showToast(msg: 'Please choose another driver');
+        return;
+      }
+      RepositoryHelper.sendNotificationToDriver(
+          deviceRegistrationToken.toString(),
+          referenceRideRequest!.key!,
+          context);
+      Fluttertoast.showToast(msg: 'Notification sent Successfully!');
+    });
   }
 }
