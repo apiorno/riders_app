@@ -11,3 +11,6 @@ DirectionDetailsInfo? tripDirectionsInfo;
 String chosenDriverId = '';
 String cloudMessagingServerToken = 'ServerToken';
 late String userDropoffAddress;
+late String driverCarDetails;
+late String driverPhone;
+late String driverName;

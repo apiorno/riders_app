@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
   );
   GlobalKey<ScaffoldState> sKey = GlobalKey<ScaffoldState>();
   double searchContainerHeight = 220;
+  double waitingDriversResponseHeight = 0;
+  double assignedDriverInfoContainerheight = 0;
 
   Position? userCurrentPosition;
   var geolocator = Geolocator();
@@ -56,6 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<ActiveDriver> onlineAvailableDrivers = [];
 
   DatabaseReference? referenceRideRequest;
+  String driverRideStatus = 'Driver is Coming';
+  late StreamSubscription<DatabaseEvent> tripRideRequestInfoSubscription;
 
   void checkIfPermissionAllowed() async {
     _locationPermission = await Geolocator.requestPermission();
@@ -273,6 +277,132 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       ],
                     ),
+                  ),
+                ),
+              )),
+          Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: waitingDriversResponseHeight,
+                decoration: const BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(20),
+                      topLeft: Radius.circular(20),
+                    )),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Center(
+                    child: AnimatedTextKit(
+                      animatedTexts: [
+                        FadeAnimatedText(
+                          'Waiting for response\nfrom driver',
+                          duration: const Duration(seconds: 3),
+                          textAlign: TextAlign.center,
+                          textStyle: const TextStyle(
+                              fontSize: 30.0,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        ScaleAnimatedText(
+                          'Please wait...',
+                          duration: const Duration(seconds: 4),
+                          textAlign: TextAlign.center,
+                          textStyle: const TextStyle(
+                              fontSize: 32.0,
+                              color: Colors.white,
+                              fontFamily: 'Canterbury'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )),
+          Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: assignedDriverInfoContainerheight,
+                decoration: const BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(20),
+                      topLeft: Radius.circular(20),
+                    )),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Text(
+                          driverRideStatus,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      const Divider(
+                        height: 2,
+                        thickness: 2,
+                        color: Colors.white54,
+                      ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      Text(
+                        driverCarDetails,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white54,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 2,
+                      ),
+                      Text(
+                        driverName,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white54,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      const Divider(
+                        height: 2,
+                        thickness: 2,
+                        color: Colors.white54,
+                      ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green),
+                          icon: const Icon(Icons.phone_android),
+                          label: const Text(
+                            'Call Driver',
+                            style: TextStyle(color: Colors.black54),
+                          ),
+                        ),
+                      )
+                    ],
                   ),
                 ),
               ))
@@ -636,6 +766,26 @@ class _HomeScreenState extends State<HomeScreen> {
     };
     referenceRideRequest!.set(userInfo);
 
+    tripRideRequestInfoSubscription =
+        referenceRideRequest!.onValue.listen((event) {
+      final val = event.snapshot.value;
+      if (val == null) return;
+      if ((val as Map)['car_details'] != null) {
+        setState(() {
+          driverCarDetails = val['car_details'].toString();
+        });
+      }
+      if (val['driverPhone'] != null) {
+        setState(() {
+          driverPhone = val['driverPhone'].toString();
+        });
+      }
+      if (val['driverName'] != null) {
+        setState(() {
+          driverName = val['driverName'].toString();
+        });
+      }
+    });
     onlineAvailableDrivers = GeofireRepositoryHelper().activeDrivers;
     searchNearestOnlineDrivers();
   }
@@ -706,7 +856,42 @@ class _HomeScreenState extends State<HomeScreen> {
           deviceRegistrationToken.toString(),
           referenceRideRequest!.key!,
           context);
-      Fluttertoast.showToast(msg: 'Notification sent Successfully!');
+      showWaitingForDriversResponse();
+
+      FirebaseDatabase.instance
+          .ref()
+          .child('drivers')
+          .child(chosenDriverId)
+          .child('newRideStatus')
+          .onValue
+          .listen((event) {
+        if (event.snapshot.value == 'idle') {
+          Fluttertoast.showToast(msg: 'The driver has cancelled your request');
+          Future.delayed(Duration(milliseconds: 3000), () {
+            Fluttertoast.showToast(msg: 'Restarting App');
+            SystemNavigator.pop();
+          });
+        }
+
+        if (event.snapshot.value == 'accepted') {
+          showUIForAssignedDriverInfo();
+        }
+      });
+    });
+  }
+
+  void showUIForAssignedDriverInfo() {
+    setState(() {
+      waitingDriversResponseHeight = 0;
+      searchContainerHeight = 0;
+      assignedDriverInfoContainerheight = 245;
+    });
+  }
+
+  void showWaitingForDriversResponse() {
+    setState(() {
+      searchContainerHeight = 0;
+      waitingDriversResponseHeight = 220;
     });
   }
 }
