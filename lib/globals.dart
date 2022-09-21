@@ -14,3 +14,5 @@ late String userDropoffAddress;
 late String driverCarDetails;
 late String driverPhone;
 late String driverName;
+var countRatingStars = 0.0;
+late String titleStarsRating;

@@ -3,7 +3,7 @@ import 'package:riders_app/models/directions_address.dart';
 
 class AppInfo extends ChangeNotifier {
   DirectionsAddress? userPickUpLocation;
-  DirectionsAddress? userDropOffAddress;
+  DirectionsAddress? userDropOffLocation;
 
   void updatePickUpLocationAddress(DirectionsAddress newUserPickUpAddress) {
     userPickUpLocation = newUserPickUpAddress;
@@ -11,7 +11,7 @@ class AppInfo extends ChangeNotifier {
   }
 
   void updateDropOffLocationAddress(DirectionsAddress newUserDropOffAddress) {
-    userDropOffAddress = newUserDropOffAddress;
+    userDropOffLocation = newUserDropOffAddress;
     notifyListeners();
   }
 }

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:riders_app/authentication/login_screen.dart';
 import 'package:riders_app/helpers/repository_helper.dart';
-import 'package:riders_app/home/home_screen.dart';
+import 'package:riders_app/mainScreens/home_screen.dart';
 
 import '../globals.dart';
 
@@ -15,9 +15,8 @@ class MySplashScreen extends StatefulWidget {
 
 class _MySplashScreenState extends State<MySplashScreen> {
   void startTimer() {
-    firebaseAuth.currentUser != null
-        ? RepositoryHelper.readCurrentOnlineUserInfo()
-        : null;
+    if (firebaseAuth.currentUser != null)
+      RepositoryHelper.readCurrentOnlineUserInfo();
     Timer(const Duration(seconds: 3), () async {
       if (firebaseAuth.currentUser != null) {
         currentFirebaseUser = firebaseAuth.currentUser;

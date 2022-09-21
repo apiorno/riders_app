@@ -12,11 +12,13 @@ import 'package:provider/provider.dart';
 import 'package:riders_app/globals.dart';
 import 'package:riders_app/helpers/geofire_repository_helper.dart';
 import 'package:riders_app/helpers/repository_helper.dart';
-import 'package:riders_app/home/search_places_screen.dart';
-import 'package:riders_app/home/select_nearet_active_driver.dart';
+import 'package:riders_app/mainScreens/rate_driver_screen.dart';
+import 'package:riders_app/mainScreens/search_places_screen.dart';
+import 'package:riders_app/mainScreens/select_nearet_active_driver.dart';
 import 'package:riders_app/info_handler/app_info.dart';
 import 'package:riders_app/models/active_driver.dart';
 import 'package:riders_app/widgets/my_drawer.dart';
+import 'package:riders_app/widgets/pay_fare_amount_dialog.dart';
 import 'package:riders_app/widgets/progress_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -60,6 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
   DatabaseReference? referenceRideRequest;
   String driverRideStatus = 'Driver is Coming';
   late StreamSubscription<DatabaseEvent> tripRideRequestInfoSubscription;
+  late String userRideRequestStatus;
+
+  bool shouldUpdateTimeToLocation = true;
 
   void checkIfPermissionAllowed() async {
     _locationPermission = await Geolocator.requestPermission();
@@ -258,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             if (appInfo.userPickUpLocation == null) {
                               Fluttertoast.showToast(
                                   msg: 'Please select you location');
-                            } else if (appInfo.userDropOffAddress == null) {
+                            } else if (appInfo.userDropOffLocation == null) {
                               Fluttertoast.showToast(
                                   msg: 'Please select you destination');
                             } else {
@@ -416,8 +421,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final originPosition = LatLng(appInfo.userPickUpLocation!.locationLatitude!,
         appInfo.userPickUpLocation!.locationLongitude!);
     final destinationPosition = LatLng(
-        appInfo.userDropOffAddress!.locationLatitude!,
-        appInfo.userDropOffAddress!.locationLongitude!);
+        appInfo.userDropOffLocation!.locationLatitude!,
+        appInfo.userDropOffLocation!.locationLongitude!);
 
     showDialog(
         context: context,
@@ -485,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final destiantionMarker = Marker(
         markerId: const MarkerId('destinationID'),
         infoWindow: InfoWindow(
-            title: appInfo.userDropOffAddress!.locationName,
+            title: appInfo.userDropOffLocation!.locationName,
             snippet: 'Destination'),
         position: destinationPosition,
         icon:
@@ -755,19 +760,19 @@ class _HomeScreenState extends State<HomeScreen> {
         'longitude': appInfo.userPickUpLocation!.locationLongitude.toString(),
       },
       'destination': {
-        'latitude': appInfo.userDropOffAddress!.locationLatitude.toString(),
-        'longitude': appInfo.userDropOffAddress!.locationLongitude.toString(),
+        'latitude': appInfo.userDropOffLocation!.locationLatitude.toString(),
+        'longitude': appInfo.userDropOffLocation!.locationLongitude.toString(),
       },
       'time': DateTime.now().toString(),
       'userName': currentRider!.name,
       'userPhone': currentRider!.phone,
       'originAddress': appInfo.userPickUpLocation!.locationName,
-      'destinationAddress': appInfo.userDropOffAddress!.locationName
+      'destinationAddress': appInfo.userDropOffLocation!.locationName
     };
     referenceRideRequest!.set(userInfo);
 
     tripRideRequestInfoSubscription =
-        referenceRideRequest!.onValue.listen((event) {
+        referenceRideRequest!.onValue.listen((event) async {
       final val = event.snapshot.value;
       if (val == null) return;
       if ((val as Map)['car_details'] != null) {
@@ -785,9 +790,96 @@ class _HomeScreenState extends State<HomeScreen> {
           driverName = val['driverName'].toString();
         });
       }
+
+      if (val['status'] != null) {
+        userRideRequestStatus = val['status'].toString();
+      }
+      if (val['driverLocation'] != null) {
+        final currentDriverLatitude =
+            double.parse(val['driverLocation']['latitude']);
+        final currentDriverLongitude =
+            double.parse(val['driverLocation']['longitude']);
+
+        final driverCurrentPosition =
+            LatLng(currentDriverLatitude, currentDriverLongitude);
+
+        if (userRideRequestStatus == 'accepted') {
+          updateArrivalTimeToUserPickupLocation(driverCurrentPosition);
+        }
+
+        if (userRideRequestStatus == 'arrived') {
+          setState(() {
+            driverRideStatus = 'Driver has arrived';
+          });
+        }
+        if (userRideRequestStatus == 'ontrip') {
+          updateReachingTimeToUserDropOffLocation(driverCurrentPosition);
+        }
+        if (userRideRequestStatus == 'ended') {
+          final fareAmount = (event.snapshot.value as Map)['fareAmount'];
+          if (fareAmount != null) {
+            final response = await showDialog<bool>(
+                context: context,
+                builder: (context) => PayFareAmountDialog(
+                      fareAmount: double.parse(fareAmount),
+                    ));
+            if (response!) {
+              final assignedDriverId =
+                  (event.snapshot.value as Map)['driverId']?.toString();
+              if (assignedDriverId != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        RateDriverScreen(assignedDriverId: assignedDriverId),
+                  ),
+                );
+                referenceRideRequest!.onDisconnect();
+                tripRideRequestInfoSubscription.cancel();
+              }
+            }
+          }
+        }
+      }
     });
     onlineAvailableDrivers = GeofireRepositoryHelper().activeDrivers;
     searchNearestOnlineDrivers();
+  }
+
+  Future<void> updateReachingTimeToUserDropOffLocation(
+      LatLng driverCurrentPosition) async {
+    if (shouldUpdateTimeToLocation) {
+      shouldUpdateTimeToLocation = false;
+      final dropOffLocation =
+          Provider.of<AppInfo>(context, listen: false).userDropOffLocation;
+      final userDestinationPosition = LatLng(dropOffLocation!.locationLatitude!,
+          dropOffLocation.locationLongitude!);
+      final directionDetailsInfo =
+          await RepositoryHelper.obtainOriginToDestinationDirectionDetails(
+              driverCurrentPosition, userDestinationPosition);
+      setState(() {
+        driverRideStatus =
+            'Going towards destination :: ${directionDetailsInfo.durationText}';
+      });
+      shouldUpdateTimeToLocation = true;
+    }
+  }
+
+  Future<void> updateArrivalTimeToUserPickupLocation(
+      LatLng driverCurrentPosition) async {
+    if (shouldUpdateTimeToLocation) {
+      shouldUpdateTimeToLocation = false;
+      final userPickUpPosition =
+          LatLng(userCurrentPosition!.latitude, userCurrentPosition!.longitude);
+      final directionDetailsInfo =
+          await RepositoryHelper.obtainOriginToDestinationDirectionDetails(
+              driverCurrentPosition, userPickUpPosition);
+      setState(() {
+        driverRideStatus =
+            'Driver is coming :: ${directionDetailsInfo.durationText}';
+      });
+      shouldUpdateTimeToLocation = true;
+    }
   }
 
   Future<void> searchNearestOnlineDrivers() async {
