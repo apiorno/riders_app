@@ -13,6 +13,7 @@ import 'package:riders_app/info_handler/app_info.dart';
 import 'package:riders_app/models/direction_details_info.dart';
 import 'package:riders_app/models/directions_address.dart';
 import 'package:riders_app/models/rider.dart';
+import 'package:riders_app/models/trip.dart';
 
 class RepositoryHelper {
   static Future<String> searchAddressForGeographicCoordinates(
@@ -94,5 +95,37 @@ class RepositoryHelper {
     };
     final response = http.post(Uri.parse('https://fcm.googleapis.com/fcm/send'),
         headers: header, body: jsonEncode(officialNotification));
+  }
+
+  static void readTripsKeysForOlineUser(context) {
+    FirebaseDatabase.instance
+        .ref()
+        .child('rideRequests')
+        .orderByChild('userName')
+        .equalTo(currentRider!.name)
+        .once()
+        .then((snap) {
+      final val = snap.snapshot.value;
+      if (val != null) {
+        final overAllTripsCount = (val as Map<String, dynamic>).length;
+        Provider.of<AppInfo>(context, listen: false)
+          ..updateOverAllTripsCount(overAllTripsCount)
+          ..updateOverAllTripsKeys(val.keys.toList());
+
+        readTripsHistoryInformation(context);
+      }
+    });
+  }
+
+  static void readTripsHistoryInformation(context) {
+    final rideRequestsRef =
+        FirebaseDatabase.instance.ref().child('rideRequests');
+    final appInfo = Provider.of<AppInfo>(context, listen: false);
+    appInfo.historyTripsKeys.forEach((tripKey) {
+      rideRequestsRef.child(tripKey).once().then((snap) {
+        final trip = Trip.fromJson(snap.snapshot.value as Map<String, dynamic>);
+        appInfo.updateOverAllTripsHistoryInformation(trip);
+      });
+    });
   }
 }

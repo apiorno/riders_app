@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:riders_app/globals.dart';
+import 'package:riders_app/mainScreens/trip_history_screen.dart';
 import 'package:riders_app/splash/splash_screen.dart';
 
 class MyDrawer extends StatefulWidget {
@@ -67,7 +68,12 @@ class _MyDrawerState extends State<MyDrawer> {
               height: 12,
             ),
             GestureDetector(
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => TripHistoryScrenn()));
+              },
               child: const ListTile(
                 leading: Icon(Icons.history),
                 title: Text(

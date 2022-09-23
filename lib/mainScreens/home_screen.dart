@@ -86,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
         await RepositoryHelper.searchAddressForGeographicCoordinates(
             userCurrentPosition!, context);
     initializeGeoFireListener();
+    RepositoryHelper.readTripsKeysForOlineUser(context);
   }
 
   @override
