@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:smooth_star_rating_nsafe/smooth_star_rating.dart';
-import 'package:users_app/global/global.dart';
+import 'package:riders_app/global/global.dart';
 
-
-class RateDriverScreen extends StatefulWidget
-{
-  String? assignedDriverId;
+class RateDriverScreen extends StatefulWidget {
+  final String? assignedDriverId;
 
   RateDriverScreen({this.assignedDriverId});
 
@@ -16,14 +14,9 @@ class RateDriverScreen extends StatefulWidget
   State<RateDriverScreen> createState() => _RateDriverScreenState();
 }
 
-
-
-
-class _RateDriverScreenState extends State<RateDriverScreen>
-{
+class _RateDriverScreenState extends State<RateDriverScreen> {
   @override
-  Widget build(BuildContext context)
-  {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Dialog(
@@ -41,9 +34,9 @@ class _RateDriverScreenState extends State<RateDriverScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-
-              const SizedBox(height: 22.0,),
-
+              const SizedBox(
+                height: 22.0,
+              ),
               const Text(
                 "Rate Trip Experience",
                 style: TextStyle(
@@ -53,13 +46,16 @@ class _RateDriverScreenState extends State<RateDriverScreen>
                   color: Colors.black54,
                 ),
               ),
-
-              const SizedBox(height: 22.0,),
-
-              const Divider(height: 4.0, thickness: 4.0,),
-
-              const SizedBox(height: 22.0,),
-
+              const SizedBox(
+                height: 22.0,
+              ),
+              const Divider(
+                height: 4.0,
+                thickness: 4.0,
+              ),
+              const SizedBox(
+                height: 22.0,
+              ),
               SmoothStarRating(
                 rating: countRatingStars,
                 allowHalfRating: false,
@@ -67,45 +63,39 @@ class _RateDriverScreenState extends State<RateDriverScreen>
                 color: Colors.green,
                 borderColor: Colors.green,
                 size: 46,
-                onRatingChanged: (valueOfStarsChoosed)
-                {
+                onRatingChanged: (valueOfStarsChoosed) {
                   countRatingStars = valueOfStarsChoosed;
 
-                  if(countRatingStars == 1)
-                  {
+                  if (countRatingStars == 1) {
                     setState(() {
                       titleStarsRating = "Very Bad";
                     });
                   }
-                  if(countRatingStars == 2)
-                  {
+                  if (countRatingStars == 2) {
                     setState(() {
                       titleStarsRating = "Bad";
                     });
                   }
-                  if(countRatingStars == 3)
-                  {
+                  if (countRatingStars == 3) {
                     setState(() {
                       titleStarsRating = "Good";
                     });
                   }
-                  if(countRatingStars == 4)
-                  {
+                  if (countRatingStars == 4) {
                     setState(() {
                       titleStarsRating = "Very Good";
                     });
                   }
-                  if(countRatingStars == 5)
-                  {
+                  if (countRatingStars == 5) {
                     setState(() {
                       titleStarsRating = "Excellent";
                     });
                   }
                 },
               ),
-
-              const SizedBox(height: 12.0,),
-
+              const SizedBox(
+                height: 12.0,
+              ),
               Text(
                 titleStarsRating,
                 style: const TextStyle(
@@ -114,29 +104,27 @@ class _RateDriverScreenState extends State<RateDriverScreen>
                   color: Colors.green,
                 ),
               ),
-
-              const SizedBox(height: 18.0,),
-              
+              const SizedBox(
+                height: 18.0,
+              ),
               ElevatedButton(
-                  onPressed: ()
-                  {
-                    DatabaseReference rateDriverRef = FirebaseDatabase.instance.ref()
+                  onPressed: () {
+                    DatabaseReference rateDriverRef = FirebaseDatabase.instance
+                        .ref()
                         .child("drivers")
                         .child(widget.assignedDriverId!)
                         .child("ratings");
 
-                    rateDriverRef.once().then((snap)
-                    {
-                      if(snap.snapshot.value == null)
-                      {
+                    rateDriverRef.once().then((snap) {
+                      if (snap.snapshot.value == null) {
                         rateDriverRef.set(countRatingStars.toString());
 
                         SystemNavigator.pop();
-                      }
-                      else
-                      {
-                        double pastRatings = double.parse(snap.snapshot.value.toString());
-                        double newAverageRatings = (pastRatings + countRatingStars) / 2;
+                      } else {
+                        double pastRatings =
+                            double.parse(snap.snapshot.value.toString());
+                        double newAverageRatings =
+                            (pastRatings + countRatingStars) / 2;
                         rateDriverRef.set(newAverageRatings.toString());
 
                         SystemNavigator.pop();
@@ -146,7 +134,7 @@ class _RateDriverScreenState extends State<RateDriverScreen>
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    primary: Colors.green,
+                    backgroundColor: Colors.green,
                     padding: EdgeInsets.symmetric(horizontal: 74),
                   ),
                   child: const Text(
@@ -156,11 +144,10 @@ class _RateDriverScreenState extends State<RateDriverScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
-                  )
+                  )),
+              const SizedBox(
+                height: 10.0,
               ),
-
-              const SizedBox(height: 10.0,),
-
             ],
           ),
         ),

@@ -1,30 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:users_app/global/global.dart';
-import 'package:users_app/widgets/info_design_ui.dart';
+import 'package:riders_app/global/global.dart';
+import 'package:riders_app/widgets/info_design_ui.dart';
 
-
-class ProfileScreen extends StatefulWidget
-{
+class ProfileScreen extends StatefulWidget {
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-
-
-
-class _ProfileScreenState extends State<ProfileScreen>
-{
+class _ProfileScreenState extends State<ProfileScreen> {
   @override
-  Widget build(BuildContext context)
-  {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
             //name
             Text(
               userModelCurrentInfo!.name!,
@@ -45,7 +37,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ),
 
-            const SizedBox(height: 38.0,),
+            const SizedBox(
+              height: 38.0,
+            ),
 
             //phone
             InfoDesignUIWidget(
@@ -64,19 +58,17 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
 
             ElevatedButton(
-                onPressed: ()
-                {
-                  SystemNavigator.pop();
-                },
-                style: ElevatedButton.styleFrom(
-                  primary: Colors.white54,
-                ),
-                child: const Text(
-                  "Close",
-                  style: TextStyle(color: Colors.white),
-                ),
+              onPressed: () {
+                SystemNavigator.pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white54,
+              ),
+              child: const Text(
+                "Close",
+                style: TextStyle(color: Colors.white),
+              ),
             )
-
           ],
         ),
       ),

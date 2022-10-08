@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-
-class PayFareAmountDialog extends StatefulWidget
-{
-  double? fareAmount;
+class PayFareAmountDialog extends StatefulWidget {
+  final double? fareAmount;
 
   PayFareAmountDialog({this.fareAmount});
 
@@ -12,14 +9,9 @@ class PayFareAmountDialog extends StatefulWidget
   State<PayFareAmountDialog> createState() => _PayFareAmountDialogState();
 }
 
-
-
-
-class _PayFareAmountDialogState extends State<PayFareAmountDialog>
-{
+class _PayFareAmountDialogState extends State<PayFareAmountDialog> {
   @override
-  Widget build(BuildContext context)
-  {
+  Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
@@ -35,9 +27,9 @@ class _PayFareAmountDialogState extends State<PayFareAmountDialog>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-
-            const SizedBox(height: 20,),
-
+            const SizedBox(
+              height: 20,
+            ),
             Text(
               "Fare Amount".toUpperCase(),
               style: const TextStyle(
@@ -46,16 +38,16 @@ class _PayFareAmountDialogState extends State<PayFareAmountDialog>
                 fontSize: 16,
               ),
             ),
-
-            const SizedBox(height: 20,),
-
+            const SizedBox(
+              height: 20,
+            ),
             const Divider(
               thickness: 4,
               color: Colors.grey,
             ),
-
-            const SizedBox(height: 16,),
-
+            const SizedBox(
+              height: 16,
+            ),
             Text(
               widget.fareAmount.toString(),
               style: const TextStyle(
@@ -64,9 +56,9 @@ class _PayFareAmountDialogState extends State<PayFareAmountDialog>
                 fontSize: 50,
               ),
             ),
-
-            const SizedBox(height: 10,),
-
+            const SizedBox(
+              height: 10,
+            ),
             const Padding(
               padding: EdgeInsets.all(8.0),
               child: Text(
@@ -77,19 +69,17 @@ class _PayFareAmountDialogState extends State<PayFareAmountDialog>
                 ),
               ),
             ),
-
-            const SizedBox(height: 10,),
-
+            const SizedBox(
+              height: 10,
+            ),
             Padding(
               padding: const EdgeInsets.all(18.0),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.green,
+                  backgroundColor: Colors.green,
                 ),
-                onPressed: ()
-                {
-                  Future.delayed(const Duration(milliseconds: 2000), ()
-                  {
+                onPressed: () {
+                  Future.delayed(const Duration(milliseconds: 2000), () {
                     Navigator.pop(context, "cashPayed");
                   });
                 },
@@ -116,9 +106,9 @@ class _PayFareAmountDialogState extends State<PayFareAmountDialog>
                 ),
               ),
             ),
-
-            const SizedBox(height: 4,),
-
+            const SizedBox(
+              height: 4,
+            ),
           ],
         ),
       ),

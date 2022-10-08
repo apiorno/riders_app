@@ -3,50 +3,55 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:smooth_star_rating_nsafe/smooth_star_rating.dart';
-import 'package:users_app/assistants/assistant_methods.dart';
-import 'package:users_app/global/global.dart';
+import 'package:riders_app/assistants/assistant_methods.dart';
+import 'package:riders_app/global/global.dart';
 
-
-class SelectNearestActiveDriversScreen extends StatefulWidget
-{
-  DatabaseReference? referenceRideRequest;
+class SelectNearestActiveDriversScreen extends StatefulWidget {
+  final DatabaseReference? referenceRideRequest;
 
   SelectNearestActiveDriversScreen({this.referenceRideRequest});
 
   @override
-  _SelectNearestActiveDriversScreenState createState() => _SelectNearestActiveDriversScreenState();
+  _SelectNearestActiveDriversScreenState createState() =>
+      _SelectNearestActiveDriversScreenState();
 }
 
-
-
-class _SelectNearestActiveDriversScreenState extends State<SelectNearestActiveDriversScreen>
-{
+class _SelectNearestActiveDriversScreenState
+    extends State<SelectNearestActiveDriversScreen> {
   String fareAmount = "";
 
-  getFareAmountAccordingToVehicleType(int index)
-  {
-    if(tripDirectionDetailsInfo != null)
-    {
-      if(dList[index]["car_details"]["type"].toString() == "bike")
-      {
-        fareAmount = (AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) / 2).toStringAsFixed(1);
+  getFareAmountAccordingToVehicleType(int index) {
+    if (tripDirectionDetailsInfo != null) {
+      if (dList[index]["car_details"]["type"].toString() == "bike") {
+        fareAmount =
+            (AssistantMethods.calculateFareAmountFromOriginToDestination(
+                        tripDirectionDetailsInfo!) /
+                    2)
+                .toStringAsFixed(1);
       }
-      if(dList[index]["car_details"]["type"].toString() == "uber-x") //means executive type of car - more comfortable pro level
+      if (dList[index]["car_details"]["type"].toString() ==
+          "uber-x") //means executive type of car - more comfortable pro level
       {
-        fareAmount = (AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!) * 2).toStringAsFixed(1);
+        fareAmount =
+            (AssistantMethods.calculateFareAmountFromOriginToDestination(
+                        tripDirectionDetailsInfo!) *
+                    2)
+                .toStringAsFixed(1);
       }
-      if(dList[index]["car_details"]["type"].toString() == "uber-go") // non - executive car - comfortable
+      if (dList[index]["car_details"]["type"].toString() ==
+          "uber-go") // non - executive car - comfortable
       {
-        fareAmount = (AssistantMethods.calculateFareAmountFromOriginToDestination(tripDirectionDetailsInfo!)).toString();
+        fareAmount =
+            (AssistantMethods.calculateFareAmountFromOriginToDestination(
+                    tripDirectionDetailsInfo!))
+                .toString();
       }
     }
     return fareAmount;
   }
 
-
   @override
-  Widget build(BuildContext context)
-  {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -58,11 +63,8 @@ class _SelectNearestActiveDriversScreenState extends State<SelectNearestActiveDr
           ),
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.close, color: Colors.white
-          ),
-          onPressed: ()
-          {
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
             //delete/remove the ride request from database
             widget.referenceRideRequest!.remove();
             Fluttertoast.showToast(msg: "you have cancelled the ride request.");
@@ -73,11 +75,9 @@ class _SelectNearestActiveDriversScreenState extends State<SelectNearestActiveDr
       ),
       body: ListView.builder(
         itemCount: dList.length,
-        itemBuilder: (BuildContext context, int index)
-        {
+        itemBuilder: (BuildContext context, int index) {
           return GestureDetector(
-            onTap: ()
-            {
+            onTap: () {
               setState(() {
                 chosenDriverId = dList[index]["id"].toString();
               });
@@ -92,7 +92,9 @@ class _SelectNearestActiveDriversScreenState extends State<SelectNearestActiveDr
                 leading: Padding(
                   padding: const EdgeInsets.only(top: 2.0),
                   child: Image.asset(
-                    "images/" + dList[index]["car_details"]["type"].toString() + ".png",
+                    "images/" +
+                        dList[index]["car_details"]["type"].toString() +
+                        ".png",
                     width: 70,
                   ),
                 ),
@@ -114,7 +116,9 @@ class _SelectNearestActiveDriversScreenState extends State<SelectNearestActiveDr
                       ),
                     ),
                     SmoothStarRating(
-                      rating: dList[index]["ratings"] == null ? 0.0 : double.parse(dList[index]["ratings"]),
+                      rating: dList[index]["ratings"] == null
+                          ? 0.0
+                          : double.parse(dList[index]["ratings"]),
                       color: Colors.black,
                       borderColor: Colors.black,
                       allowHalfRating: true,
@@ -132,23 +136,29 @@ class _SelectNearestActiveDriversScreenState extends State<SelectNearestActiveDr
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 2,),
-                    Text(
-                      tripDirectionDetailsInfo != null ? tripDirectionDetailsInfo!.duration_text! : "",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black54,
-                        fontSize: 12
-                      ),
+                    const SizedBox(
+                      height: 2,
                     ),
-                    const SizedBox(height: 2,),
                     Text(
-                      tripDirectionDetailsInfo != null ? tripDirectionDetailsInfo!.distance_text! : "",
+                      tripDirectionDetailsInfo != null
+                          ? tripDirectionDetailsInfo!.durationText!
+                          : "",
                       style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.black54,
-                          fontSize: 12
-                      ),
+                          fontSize: 12),
+                    ),
+                    const SizedBox(
+                      height: 2,
+                    ),
+                    Text(
+                      tripDirectionDetailsInfo != null
+                          ? tripDirectionDetailsInfo!.distanceText!
+                          : "",
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black54,
+                          fontSize: 12),
                     ),
                   ],
                 ),

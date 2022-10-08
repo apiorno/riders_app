@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:users_app/models/trips_history_model.dart';
+import 'package:riders_app/models/trips_history_model.dart';
 
-
-class HistoryDesignUIWidget extends StatefulWidget
-{
-  TripsHistoryModel? tripsHistoryModel;
+class HistoryDesignUIWidget extends StatefulWidget {
+  final TripsHistoryModel? tripsHistoryModel;
 
   HistoryDesignUIWidget({this.tripsHistoryModel});
 
@@ -13,24 +11,19 @@ class HistoryDesignUIWidget extends StatefulWidget
   State<HistoryDesignUIWidget> createState() => _HistoryDesignUIWidgetState();
 }
 
-
-
-
-class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget>
-{
-  String formatDateAndTime(String dateTimeFromDB)
-  {
+class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget> {
+  String formatDateAndTime(String dateTimeFromDB) {
     DateTime dateTime = DateTime.parse(dateTimeFromDB);
 
-                                          // Dec 10                            //2022                         //1:12 pm
-    String formattedDatetime = "${DateFormat.MMMd().format(dateTime)}, ${DateFormat.y().format(dateTime)} - ${DateFormat.jm().format(dateTime)}";
+    // Dec 10                            //2022                         //1:12 pm
+    String formattedDatetime =
+        "${DateFormat.MMMd().format(dateTime)}, ${DateFormat.y().format(dateTime)} - ${DateFormat.jm().format(dateTime)}";
 
     return formattedDatetime;
   }
 
   @override
-  Widget build(BuildContext context)
-  {
+  Widget build(BuildContext context) {
     return Container(
       color: Colors.black54,
       child: Padding(
@@ -38,7 +31,6 @@ class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             //driver name + Fare Amount
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -53,9 +45,9 @@ class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget>
                     ),
                   ),
                 ),
-
-                const SizedBox(width: 12,),
-
+                const SizedBox(
+                  width: 12,
+                ),
                 Text(
                   "\$ " + widget.tripsHistoryModel!.fareAmount!,
                   style: const TextStyle(
@@ -66,7 +58,9 @@ class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget>
               ],
             ),
 
-            const SizedBox(height: 2,),
+            const SizedBox(
+              height: 2,
+            ),
 
             // car details
             Row(
@@ -76,11 +70,11 @@ class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget>
                   color: Colors.black,
                   size: 28,
                 ),
-
-                const SizedBox(width: 12,),
-
+                const SizedBox(
+                  width: 12,
+                ),
                 Text(
-                  widget.tripsHistoryModel!.car_details!,
+                  widget.tripsHistoryModel!.carDetails!,
                   style: const TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
@@ -90,20 +84,21 @@ class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget>
               ],
             ),
 
-            const SizedBox(height: 20,),
+            const SizedBox(
+              height: 20,
+            ),
 
             //icon + pickup
             Row(
               children: [
-
                 Image.asset(
                   "images/origin.png",
                   height: 26,
                   width: 26,
                 ),
-
-                const SizedBox(width: 12,),
-
+                const SizedBox(
+                  width: 12,
+                ),
                 Expanded(
                   child: Container(
                     child: Text(
@@ -115,24 +110,24 @@ class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget>
                     ),
                   ),
                 ),
-
               ],
             ),
 
-            const SizedBox(height: 14,),
+            const SizedBox(
+              height: 14,
+            ),
 
             //icon + dropOff
             Row(
               children: [
-
                 Image.asset(
                   "images/destination.png",
                   height: 24,
                   width: 24,
                 ),
-
-                const SizedBox(width: 12,),
-
+                const SizedBox(
+                  width: 12,
+                ),
                 Expanded(
                   child: Container(
                     child: Text(
@@ -144,11 +139,12 @@ class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget>
                     ),
                   ),
                 ),
-
               ],
             ),
 
-            const SizedBox(height: 14,),
+            const SizedBox(
+              height: 14,
+            ),
 
             //trip time and date
             Row(
@@ -164,8 +160,9 @@ class _HistoryDesignUIWidgetState extends State<HistoryDesignUIWidget>
               ],
             ),
 
-            const SizedBox(height: 2,),
-
+            const SizedBox(
+              height: 2,
+            ),
           ],
         ),
       ),
