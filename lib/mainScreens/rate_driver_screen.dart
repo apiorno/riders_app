@@ -1,24 +1,35 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:riders_app/globals.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:smooth_star_rating_nsafe/smooth_star_rating.dart';
+import 'package:users_app/global/global.dart';
 
-class RateDriverScreen extends StatefulWidget {
-  final String assignedDriverId;
-  RateDriverScreen({required this.assignedDriverId, super.key});
+
+class RateDriverScreen extends StatefulWidget
+{
+  String? assignedDriverId;
+
+  RateDriverScreen({this.assignedDriverId});
 
   @override
   State<RateDriverScreen> createState() => _RateDriverScreenState();
 }
 
-class _RateDriverScreenState extends State<RateDriverScreen> {
+
+
+
+class _RateDriverScreenState extends State<RateDriverScreen>
+{
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
         backgroundColor: Colors.white60,
         child: Container(
           margin: const EdgeInsets.all(8),
@@ -30,11 +41,11 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(
-                height: 22,
-              ),
+
+              const SizedBox(height: 22.0,),
+
               const Text(
-                'Rate Trip experience',
+                "Rate Trip Experience",
                 style: TextStyle(
                   fontSize: 22,
                   letterSpacing: 2,
@@ -42,16 +53,13 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                   color: Colors.black54,
                 ),
               ),
-              const SizedBox(
-                height: 22,
-              ),
-              const Divider(
-                height: 4,
-                thickness: 4,
-              ),
-              const SizedBox(
-                height: 22,
-              ),
+
+              const SizedBox(height: 22.0,),
+
+              const Divider(height: 4.0, thickness: 4.0,),
+
+              const SizedBox(height: 22.0,),
+
               SmoothStarRating(
                 rating: countRatingStars,
                 allowHalfRating: false,
@@ -59,71 +67,100 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                 color: Colors.green,
                 borderColor: Colors.green,
                 size: 46,
-                onRatingChanged: (value) {
-                  countRatingStars = value;
-                  switch (countRatingStars.round()) {
-                    case 1:
-                      titleStarsRating = 'Very bad';
-                      break;
-                    case 2:
-                      titleStarsRating = 'Bad';
-                      break;
-                    case 3:
-                      titleStarsRating = 'Good';
-                      break;
-                    case 4:
-                      titleStarsRating = 'Very good';
-                      break;
-                    case 5:
-                      titleStarsRating = 'Perfect';
-                      break;
-                    default:
+                onRatingChanged: (valueOfStarsChoosed)
+                {
+                  countRatingStars = valueOfStarsChoosed;
+
+                  if(countRatingStars == 1)
+                  {
+                    setState(() {
+                      titleStarsRating = "Very Bad";
+                    });
+                  }
+                  if(countRatingStars == 2)
+                  {
+                    setState(() {
+                      titleStarsRating = "Bad";
+                    });
+                  }
+                  if(countRatingStars == 3)
+                  {
+                    setState(() {
+                      titleStarsRating = "Good";
+                    });
+                  }
+                  if(countRatingStars == 4)
+                  {
+                    setState(() {
+                      titleStarsRating = "Very Good";
+                    });
+                  }
+                  if(countRatingStars == 5)
+                  {
+                    setState(() {
+                      titleStarsRating = "Excellent";
+                    });
                   }
                 },
               ),
-              const SizedBox(
-                height: 12,
-              ),
+
+              const SizedBox(height: 12.0,),
+
               Text(
                 titleStarsRating,
                 style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green),
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
               ),
-              const SizedBox(
-                height: 18,
-              ),
+
+              const SizedBox(height: 18.0,),
+              
               ElevatedButton(
-                  onPressed: () {
-                    DatabaseReference rateDriverRef = FirebaseDatabase.instance
-                        .ref()
-                        .child('drivers')
-                        .child(widget.assignedDriverId)
-                        .child('ratings');
-                    rateDriverRef.once().then((snap) {
-                      final val = snap.snapshot.value;
-                      final newRate = val == null
-                          ? countRatingStars
-                          : (double.parse(val.toString()) + countRatingStars) /
-                              2;
-                      rateDriverRef.set(newRate.toString());
-                      SystemNavigator.pop();
+                  onPressed: ()
+                  {
+                    DatabaseReference rateDriverRef = FirebaseDatabase.instance.ref()
+                        .child("drivers")
+                        .child(widget.assignedDriverId!)
+                        .child("ratings");
+
+                    rateDriverRef.once().then((snap)
+                    {
+                      if(snap.snapshot.value == null)
+                      {
+                        rateDriverRef.set(countRatingStars.toString());
+
+                        SystemNavigator.pop();
+                      }
+                      else
+                      {
+                        double pastRatings = double.parse(snap.snapshot.value.toString());
+                        double newAverageRatings = (pastRatings + countRatingStars) / 2;
+                        rateDriverRef.set(newAverageRatings.toString());
+
+                        SystemNavigator.pop();
+                      }
+
+                      Fluttertoast.showToast(msg: "Please Restart App Now");
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: EdgeInsets.symmetric(horizontal: 74)),
+                    primary: Colors.green,
+                    padding: EdgeInsets.symmetric(horizontal: 74),
+                  ),
                   child: const Text(
-                    'Submit',
+                    "Submit",
                     style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                  )),
-              const SizedBox(
-                height: 10,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  )
               ),
+
+              const SizedBox(height: 10.0,),
+
             ],
           ),
         ),

@@ -1,53 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:riders_app/globals.dart';
-import 'package:riders_app/helpers/request_helper.dart';
-import 'package:riders_app/info_handler/app_info.dart';
-import 'package:riders_app/models/directions_address.dart';
-import 'package:riders_app/models/predicted_place.dart';
-import 'package:riders_app/widgets/progress_dialog.dart';
+import 'package:users_app/assistants/request_assistant.dart';
+import 'package:users_app/global/global.dart';
+import 'package:users_app/global/map_key.dart';
+import 'package:users_app/infoHandler/app_info.dart';
+import 'package:users_app/models/directions.dart';
+import 'package:users_app/models/predicted_places.dart';
+import 'package:users_app/widgets/progress_dialog.dart';
 
-class PlacePredictionTile extends StatefulWidget {
-  final PredictedPlace predictedPlace;
 
-  const PlacePredictionTile(this.predictedPlace, {Key? key}) : super(key: key);
+class PlacePredictionTileDesign extends StatefulWidget
+{
+  final PredictedPlaces? predictedPlaces;
+
+  PlacePredictionTileDesign({this.predictedPlaces});
 
   @override
-  State<PlacePredictionTile> createState() => _PlacePredictionTileState();
+  State<PlacePredictionTileDesign> createState() => _PlacePredictionTileDesignState();
 }
 
-class _PlacePredictionTileState extends State<PlacePredictionTile> {
+class _PlacePredictionTileDesignState extends State<PlacePredictionTileDesign> {
+  getPlaceDirectionDetails(String? placeId, context) async
+  {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) => ProgressDialog(
+          message: "Setting Up Drof-Off, Please wait...",
+        ),
+    );
+
+    String placeDirectionDetailsUrl = "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$mapKey";
+
+    var responseApi = await RequestAssistant.receiveRequest(placeDirectionDetailsUrl);
+
+    Navigator.pop(context);
+
+    if(responseApi == "Error Occurred, Failed. No Response.")
+    {
+      return;
+    }
+
+    if(responseApi["status"] == "OK")
+    {
+      Directions directions = Directions();
+      directions.locationName = responseApi["result"]["name"];
+      directions.locationId = placeId;
+      directions.locationLatitude = responseApi["result"]["geometry"]["location"]["lat"];
+      directions.locationLongitude = responseApi["result"]["geometry"]["location"]["lng"];
+
+      Provider.of<AppInfo>(context, listen: false).updateDropOffLocationAddress(directions);
+
+      setState(() {
+        userDropOffAddress = directions.locationName!;
+      });
+
+      Navigator.pop(context, "obtainedDropoff");
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return ElevatedButton(
-      onPressed: () async {
-        showDialog(
-            context: context,
-            builder: (context) => const ProgressDialog(
-                  message: 'Setting Up Drop-Off, Please wait',
-                ));
-
-        try {
-          final response = await RequestHelper.receiveRequest(
-              'https://maps.googleapis.com/maps/api/place/details/json?place_id=${widget.predictedPlace.placeId}&key=$mapKey');
-          Navigator.pop(context);
-          if (response['status'] == 'OK') {
-            final newUserDropOffAddress =
-                DirectionsAddress.fromJson(response['result']);
-            Provider.of<AppInfo>(context, listen: false)
-                .updateDropOffLocationAddress(newUserDropOffAddress);
-
-            setState(() {
-              userDropoffAddress = newUserDropOffAddress.locationName!;
-            });
-            Navigator.pop(context, true);
-          }
-        } catch (e) {
-          Navigator.pop(context);
-          return;
-        }
+      onPressed: ()
+      {
+        getPlaceDirectionDetails(widget.predictedPlaces!.place_id, context);
       },
-      style: ElevatedButton.styleFrom(primary: Colors.white24),
+      style: ElevatedButton.styleFrom(
+        primary: Colors.white24,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(4.0),
         child: Row(
@@ -56,35 +77,33 @@ class _PlacePredictionTileState extends State<PlacePredictionTile> {
               Icons.add_location,
               color: Colors.grey,
             ),
-            const SizedBox(
-              width: 14,
-            ),
+            const SizedBox(width: 14.0,),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(
-                    height: 8,
-                  ),
+                  const SizedBox(height: 8.0,),
                   Text(
-                    widget.predictedPlace.mainText!,
+                    widget.predictedPlaces!.main_text!,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 16, color: Colors.white54),
+                    style: const TextStyle(
+                      fontSize: 16.0,
+                      color: Colors.white54,
+                    ),
                   ),
-                  const SizedBox(
-                    height: 2,
-                  ),
+                  const SizedBox(height: 2.0,),
                   Text(
-                    widget.predictedPlace.secondaryText!,
+                    widget.predictedPlaces!.secondary_text!,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: Colors.white54),
+                    style: const TextStyle(
+                      fontSize: 12.0,
+                      color: Colors.white54,
+                    ),
                   ),
-                  const SizedBox(
-                    height: 8,
-                  ),
+                  const SizedBox(height: 8.0,),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
